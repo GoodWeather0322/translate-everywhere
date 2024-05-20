@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "translate-everywhere"
+version = "0.1.0"
+description = ""
+authors = ["goodweather0322 <a82521112@gmail.com>"]
+readme = "README.md"
+packages = [{include = "translate_everywhere"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+
+[tool.poetry.group.dev.dependencies]
+commitizen = "^3.26.0"
+cz-conventional-gitmoji = "^0.3.1"
+
+
+[tool.commitizen]
+name = "cz_gitmoji"
+tag_format = "$version"
+version_scheme = "pep440"
+version_provider = "poetry"
+update_changelog_on_bump = true
+major_version_zero = true
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
