@@ -113,6 +113,7 @@ class OpenVoiceConverter(ConverterBase):
         s_ind = 0
         start_time = None
         
+        
         for k, w in enumerate(segments):
             # process with the time
             if k == 0:
@@ -127,9 +128,9 @@ class OpenVoiceConverter(ConverterBase):
             fname = f"{audio_name}_seg{s_ind}.wav"
 
             # filter out the segment shorter than 1.5s and longer than 20s
-            save = audio_seg.duration_seconds > 1.5 and \
+            save = audio_seg.duration_seconds > 1.0 and \
                     audio_seg.duration_seconds < 20.
-
+            print(audio_seg.duration_seconds)
             if save:
                 output_file = os.path.join(wavs_folder, fname)
                 audio_seg.export(output_file, format='wav')
@@ -162,7 +163,9 @@ class OpenVoiceConverter(ConverterBase):
         from glob import glob
         audio_segs = glob(f'{wavs_folder}/*.wav')
         if len(audio_segs) == 0:
-            raise NotImplementedError('No audio segments found!')
+            # raise NotImplementedError('No audio segments found!')
+            print('No audio segments found!, use origin tts audio')
+            return None, None
         
         return vc_model.extract_se(audio_segs, se_save_path=se_path), audio_name
 
@@ -176,6 +179,8 @@ class OpenVoiceConverter(ConverterBase):
 
         save_path = source_wav.replace('_azure_temp', '_final_conversion')
         # save_path = '/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/test_code/final_conversion.wav'
+        if source_se is None or target_se is None:
+            return source_wav
 
         start = time.perf_counter()
         encode_message = "@translate_everywhere"

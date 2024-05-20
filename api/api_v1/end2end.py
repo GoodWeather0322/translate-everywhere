@@ -40,6 +40,7 @@ async def speech_translate(file: UploadFile = File(...)):
         while content := await file.read(1024):
             await out_file.write(content)
 
-    output_file = model.end2end_flow('zh', 'ja', str(save_path / file_name))
+    output_file = model.end2end_flow('zh', 'en', str(save_path / file_name))
+    print(output_file)
     output_file = Path(output_file)
-    return FileResponse(path=output_file, filename=output_file.name, media_type="application/octet-stream")
+    return FileResponse(path=output_file, filename=output_file.name, media_type="audio/wav")
