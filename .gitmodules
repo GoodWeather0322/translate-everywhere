@@ -1,0 +1,6 @@
+[submodule "MeloTTS"]
+	path = MeloTTS
+	url = https://github.com/myshell-ai/MeloTTS.git
+[submodule "OpenVoice"]
+	path = OpenVoice
+	url = https://github.com/myshell-ai/OpenVoice.git
