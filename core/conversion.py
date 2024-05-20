@@ -168,12 +168,14 @@ class OpenVoiceConverter(ConverterBase):
 
     def convert(self, source_wav, target_wav):
         start = time.perf_counter()
+        # TODO: source wav 都是TTS語者，可以共用se節省時間
         source_se, source_audio_name = self.get_se(source_wav, self.tone_color_converter, vad=True)
         target_se, target_audio_name = self.get_se(target_wav, self.tone_color_converter, vad=True)
         end = time.perf_counter()
         print(f'Get source and target se: {end - start:.4f}s')
 
-        save_path = '/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/test_code/final_conversion.wav'
+        save_path = source_wav.replace('_azure_temp', '_final_conversion')
+        # save_path = '/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/test_code/final_conversion.wav'
 
         start = time.perf_counter()
         encode_message = "@translate_everywhere"

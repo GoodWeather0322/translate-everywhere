@@ -91,7 +91,8 @@ class AzureEnd2End:
         translation_recognizer = speechsdk.translation.TranslationRecognizer(translation_config=speech_translation_config, audio_config=audio_config)
 
         translation_recognizer.synthesizing.connect(self.synthesis_callback)
-        self.temp_file = '/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/test_code/azure_temp.wav'
+        self.temp_file = audio.replace('_16k', '').replace('.wav', '_azure_temp.wav')
+        # self.temp_file = '/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/test_code/azure_temp.wav'
         result = translation_recognizer.recognize_once()
         print(self.get_result_text(reason=result.reason, result=result))
 
