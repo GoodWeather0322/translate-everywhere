@@ -100,8 +100,10 @@ class OpenVoiceConverter(ConverterBase):
         max_len = len(audio)
         target_folder = os.path.join(target_dir, audio_name)
 
-        
+        start_time = time.perf_counter()
         vad = self.pipeline(audio_path)
+        end_time = time.perf_counter()
+        print(f'VAD time: {end_time - start_time}')
         segments = list(vad.get_timeline().support())    
 
         # create directory
@@ -172,6 +174,7 @@ class OpenVoiceConverter(ConverterBase):
     def convert(self, source_wav, target_wav):
         start = time.perf_counter()
         # TODO: source wav 都是TTS語者，可以共用se節省時間
+        # TODO: target wav 截到差不多5秒就可以停止了，比較real time，應該是要先用perf_counter看看 get_se 的 bottleneck是哪幾行程式
         source_se, source_audio_name = self.get_se(source_wav, self.tone_color_converter, vad=True)
         target_se, target_audio_name = self.get_se(target_wav, self.tone_color_converter, vad=True)
         end = time.perf_counter()
