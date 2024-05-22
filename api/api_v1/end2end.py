@@ -35,7 +35,7 @@ async def speech_translate(file: UploadFile, source_lang: str = Form(...), targe
     - target_lang: Target language for translation
     
     Returns:
-    JSONResponse with source text, target text, and base64 audio file
+    JSONResponse with source text [source_text], target text[target_text], and base64 audio file [file]
     """
     logger.info("speech-translate endpoint connected!")
     logger.info(f"source_lang: {source_lang}")
