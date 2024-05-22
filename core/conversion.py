@@ -129,9 +129,9 @@ class OpenVoiceConverter(ConverterBase):
             # segment file name
             fname = f"{audio_name}_seg{s_ind}.wav"
 
-            # filter out the segment shorter than 1.5s and longer than 20s
+            # filter out the segment shorter than 1.0s and longer than 10s
             save = audio_seg.duration_seconds > 1.0 and \
-                    audio_seg.duration_seconds < 20.
+                    audio_seg.duration_seconds < 10.
             print(audio_seg.duration_seconds)
             if save:
                 output_file = os.path.join(wavs_folder, fname)
