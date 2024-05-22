@@ -66,18 +66,18 @@ class AzureEnd2End:
             file.close()
 
     def get_result_text(self, reason, result):
-        reason_format = {
-            speechsdk.ResultReason.TranslatedSpeech:
-                f'Recognized "{self.source_language}": {result.text}\n' +
-                f'Translated into "{self.target_language}"": {result.translations[self.target_language]}',
-            speechsdk.ResultReason.RecognizedSpeech: f'Recognized: "{result.text}"',
-            speechsdk.ResultReason.NoMatch: f'No speech could be recognized: {result.no_match_details}',
-            speechsdk.ResultReason.Canceled: f'Speech Recognition canceled: {result.cancellation_details}'
-        }
-        return reason_format.get(reason, 'Unable to recognize speech')
+        print(reason)
+        if reason == speechsdk.ResultReason.TranslatedSpeech:
+            return f'Recognized "{self.source_language}": {result.text}\n' + f'Translated into "{self.target_language}"": {result.translations[self.target_language]}'
+        elif reason == speechsdk.ResultReason.RecognizedSpeech:
+            return f'Recognized: "{result.text}"'
+        elif reason == speechsdk.ResultReason.NoMatch:
+            return f'No speech could be recognized: {result.no_match_details}'
+        elif reason == speechsdk.ResultReason.Canceled:
+            return f'Speech Recognition canceled: {result.cancellation_details}'
 
-
-    def end2end_flow(self, source_language, target_language, audio):     
+    def end2end_flow(self, source_language, target_language, audio):    
+        
         self.source_language = source_language
         self.target_language = target_language
         audio = self.convert_16k(audio)
@@ -93,8 +93,21 @@ class AzureEnd2End:
         translation_recognizer.synthesizing.connect(self.synthesis_callback)
         self.temp_file = audio.replace('_16k', '').replace('.wav', '_azure_temp.wav')
         # self.temp_file = '/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/test_code/azure_temp.wav'
+        start = time.perf_counter() 
         result = translation_recognizer.recognize_once()
+        end = time.perf_counter()
+        print(f'translation time: {end - start}')
+        print(result)
         print(self.get_result_text(reason=result.reason, result=result))
+
+        if result.reason == speechsdk.ResultReason.TranslatedSpeech:
+            pass
+        elif result.reason == speechsdk.ResultReason.RecognizedSpeech:
+            return f'Recognized: "{result.text}"'
+        elif result.reason == speechsdk.ResultReason.NoMatch:
+            return f'No speech could be recognized: {result.no_match_details}'
+        elif result.reason == speechsdk.ResultReason.Canceled:
+            return f'Speech Recognition canceled: {result.cancellation_details}'
 
         start = time.perf_counter()
         output_file = self.converter.convert(self.temp_file, audio)

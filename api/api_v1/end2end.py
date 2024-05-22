@@ -4,6 +4,7 @@ import asyncio
 import aiofiles
 from pathlib import Path
 from datetime import datetime
+import os
 
 # FastAPI dependencies
 from fastapi import APIRouter, WebSocketDisconnect, File, UploadFile
@@ -42,5 +43,10 @@ async def speech_translate(file: UploadFile = File(...)):
 
     output_file = model.end2end_flow('zh', 'en', str(save_path / file_name))
     print(output_file)
-    output_file = Path(output_file)
-    return FileResponse(path=output_file, filename=output_file.name, media_type="audio/wav")
+    if not os.path.abspath(output_file):
+        return output_file
+    try:
+        output_file = Path(output_file)
+        return FileResponse(path=output_file, filename=output_file.name, media_type="audio/wav")
+    except:
+        return output_file
