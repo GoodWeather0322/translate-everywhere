@@ -5,10 +5,11 @@ import aiofiles
 from pathlib import Path
 from datetime import datetime
 import os
+import base64
 
 # FastAPI dependencies
-from fastapi import APIRouter, WebSocketDisconnect, File, UploadFile
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, WebSocketDisconnect, File, UploadFile, Form
+from fastapi.responses import FileResponse, JSONResponse
 
 # project package
 from core.end2end import AzureEnd2End
@@ -24,13 +25,28 @@ model = AzureEnd2End()
 
 
 @router.post("/speech-translate")
-async def speech_translate(file: UploadFile = File(...)):
+async def speech_translate(file: UploadFile, source_lang: str = Form(...), target_lang: str = Form(...)):
+    """
+    This function handles the speech translation endpoint.
+    
+    Parameters form input:
+    - file: Uploaded audio file
+    - source_lang: Source language for translation
+    - target_lang: Target language for translation
+    
+    Returns:
+    JSONResponse with source text, target text, and base64 audio file
+    """
     logger.info("speech-translate endpoint connected!")
+    logger.info(f"source_lang: {source_lang}")
+    logger.info(f"target_lang: {target_lang}")
+    logger.info(f"*****************")
     
     save_path = Path("uploaded_audio")
-    save_path.mkdir(parents=True, exist_ok=True)
-
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    date = timestamp[:8]
+    save_path = save_path / date
+    save_path.mkdir(parents=True, exist_ok=True)
     file_extension = Path(file.filename).suffix
     file_name = f"{timestamp}{file_extension}"
 
@@ -41,12 +57,19 @@ async def speech_translate(file: UploadFile = File(...)):
         while content := await file.read(1024):
             await out_file.write(content)
 
-    output_file = model.end2end_flow('zh', 'en', str(save_path / file_name))
-    print(output_file)
-    if not os.path.abspath(output_file):
-        return output_file
-    try:
-        output_file = Path(output_file)
-        return FileResponse(path=output_file, filename=output_file.name, media_type="audio/wav")
-    except:
-        return output_file
+    source_text, target_text, output_file = model.end2end_flow(source_lang, target_lang, str(save_path / file_name))
+    logger.info(source_text)
+    logger.info(target_text)
+
+    if output_file is not None:
+        with open(output_file, "rb") as file:
+            encoded_file = base64.b64encode(file.read()).decode("utf-8")
+    else:
+        encoded_file = None
+    # 返回 WAV 檔案和文本
+    return JSONResponse(content={
+        "source_text": source_text,
+        "target_text": target_text,
+        "file": encoded_file
+    })
+
