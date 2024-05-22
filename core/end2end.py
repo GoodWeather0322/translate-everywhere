@@ -38,12 +38,14 @@ class AzureEnd2End:
             'en': 'en-US',
             'ja': 'ja-JP',
             'ko': 'ko-KR',
+            'pl': 'pl-PL',
         }
         self.lang2voice = {
             'zh' : 'zh-TW-HsiaoChenNeural',
             'en' : 'en-US-AvaNeural', 
             'ja' : 'ja-JP-KeitaNeural', 
-            'ko' : 'ko-KR-HyunsuNeural'
+            'ko' : 'ko-KR-HyunsuNeural', 
+            'pl' : 'pl-PL-AgnieszkaNeural'
         }
         self.converter = OpenVoiceConverter()
 
@@ -73,7 +75,7 @@ class AzureEnd2End:
         target_text = None
         if reason == speechsdk.ResultReason.TranslatedSpeech:
             source_text = result.text
-            target_text = result.translations[self.target_language]
+            target_text = result.translations[self.target_language if self.target_language != 'zh' else 'zh-Hant']
             print(f'Recognized "{self.source_language}": {source_text}\n' + f'Translated into "{self.target_language}"": {target_text}')
         elif reason == speechsdk.ResultReason.RecognizedSpeech:
             source_text = result.text
@@ -92,7 +94,7 @@ class AzureEnd2End:
         audio = self.convert_16k(audio)
         speech_translation_config = speechsdk.translation.SpeechTranslationConfig(subscription=self.speech_key, region=self.service_region)
         speech_translation_config.speech_recognition_language=self.lang_mapping[source_language]
-        speech_translation_config.add_target_language(target_language)
+        speech_translation_config.add_target_language(self.target_language if self.target_language != 'zh' else 'zh-Hant')
 
         audio_config = speechsdk.audio.AudioConfig(filename=audio)
 
