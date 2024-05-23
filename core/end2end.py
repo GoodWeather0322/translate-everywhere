@@ -58,35 +58,6 @@ class AzureEnd2End:
             torchaudio.save(new_wav_file, data, 16000)
             return new_wav_file
         return wav_file
-
-    def callback_with_params(self, temp_file):
-        def synthesis_callback(evt):
-            size = len(evt.result.audio)
-            print(f'Audio synthesized: {size} byte(s) {"(COMPLETED)" if size == 0 else ""}')
-
-            if size > 0:
-                file = open(temp_file, 'wb+')
-                file.write(evt.result.audio)
-                file.close()
-
-        return synthesis_callback
-
-    def get_result_text(self, reason, result):
-        source_text = None
-        target_text = None
-        if reason == speechsdk.ResultReason.TranslatedSpeech:
-            source_text = result.text
-            target_text = result.translations[self.target_language if self.target_language != 'zh' else 'zh-Hant']
-            print(f'Recognized "{self.source_language}": {source_text}\n' + f'Translated into "{self.target_language}"": {target_text}')
-        elif reason == speechsdk.ResultReason.RecognizedSpeech:
-            source_text = result.text
-            print(f'Recognized "{self.source_language}": {source_text}')
-        elif reason == speechsdk.ResultReason.NoMatch:
-            print(f'No speech could be recognized: {result.no_match_details}')
-        elif reason == speechsdk.ResultReason.Canceled:
-            print(f'Speech Recognition canceled: {result.cancellation_details}')
-
-        return source_text, target_text
     
     def translation_continuoue(self, audio, temp_file):
         """performs continuous speech translation from an audio file"""
