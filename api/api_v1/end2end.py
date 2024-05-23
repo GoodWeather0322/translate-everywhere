@@ -57,7 +57,7 @@ async def speech_translate(file: UploadFile, source_lang: str = Form(...), targe
         while content := await file.read(1024):
             await out_file.write(content)
 
-    source_text, target_text, output_file = model.end2end_flow(source_lang, target_lang, str(save_path / file_name))
+    source_text, target_text, output_file = await asyncio.to_thread(model.end2end_flow, source_lang, target_lang, str(save_path / file_name))
     logger.info(source_text)
     logger.info(target_text)
 
