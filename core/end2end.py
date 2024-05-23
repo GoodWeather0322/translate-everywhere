@@ -66,13 +66,19 @@ class AzureEnd2End:
         source_text = []
         target_text = []
         temp_synthesis_files = []
+        asr_timestamps = []
 
         def result_callback(event_type: str, evt: speechsdk.translation.TranslationRecognitionEventArgs):
             """callback to display a translation result"""
-            nonlocal source_text, target_text
+            nonlocal source_text, target_text, asr_timestamps
             if event_type == 'RECOGNIZED':
                 source_text.append(evt.result.text)
                 target_text.append(evt.result.translations[self.target_language if self.target_language != 'zh' else 'zh-Hant'])
+                offset = evt.result.offset
+                duration = evt.result.duration
+                start = (offset / 10000000)
+                end = start + (duration / 10000000)
+                asr_timestamps.append((start, end))
             print("{}:\n {}\n\tTranslations: {}\n\tResult Json: {}\n".format(
                 event_type, evt, evt.result.translations.items(), evt.result.json))
             
@@ -139,7 +145,7 @@ class AzureEnd2End:
         translation_recognizer.stop_continuous_recognition()
         if len(temp_synthesis_files) > 0:
             save_synthesis(temp_synthesis_files, temp_file)
-        return ' '.join(source_text), ' '.join(target_text)
+        return ' '.join(source_text), ' '.join(target_text), asr_timestamps
         
 
     def end2end_flow(self, source_language, target_language, audio):    
@@ -150,14 +156,14 @@ class AzureEnd2End:
         temp_file = audio.replace('_16k', '').replace('.wav', '_azure_temp.wav')
 
         start = time.perf_counter() 
-        source_text, target_text = self.translation_continuoue(audio, temp_file)
+        source_text, target_text, asr_timestamps = self.translation_continuoue(audio, temp_file)
         end = time.perf_counter()
         print(f'translation time: {end - start}')
 
         output_file = None
         if source_text != '' and target_text != '':
             start = time.perf_counter()
-            output_file = self.converter.convert(temp_file, audio)
+            output_file = self.converter.convert(temp_file, audio, source_timestamps='all', target_timestamps=asr_timestamps)
             end = time.perf_counter()
             print(f'Conversion time: {end - start}')
 

@@ -142,8 +142,54 @@ class OpenVoiceConverter(ConverterBase):
 
             s_ind = s_ind + 1
         return wavs_folder
+    
+    def split_audio_all(self, audio_path, target_dir='processed', audio_name=None):
+        audio = AudioSegment.from_file(audio_path)
+        max_len = len(audio)
+        target_folder = os.path.join(target_dir, audio_name)
 
-    def get_se(self, audio_path, vc_model, target_dir='processed', vad=True):
+        # create directory
+        os.makedirs(target_folder, exist_ok=True)
+        wavs_folder = os.path.join(target_folder, 'wavs')
+        os.makedirs(wavs_folder, exist_ok=True)
+
+        audio_seg = audio[0:max_len]
+        # segment file name
+        fname = f"{audio_name}_seg0.wav"
+        output_file = os.path.join(wavs_folder, fname)
+        audio_seg.export(output_file, format='wav')
+        return wavs_folder
+    
+    def split_audio_timestamp(self, audio_path, timestamps, target_dir='processed', audio_name=None):
+        audio = AudioSegment.from_file(audio_path)
+        max_len = len(audio)
+        target_folder = os.path.join(target_dir, audio_name)
+
+        # create directory
+        os.makedirs(target_folder, exist_ok=True)
+        wavs_folder = os.path.join(target_folder, 'wavs')
+        os.makedirs(wavs_folder, exist_ok=True)
+
+        for s_ind, (start, end) in enumerate(timestamps):
+            if s_ind == 0:
+                start_time = max(0, start)
+            end_time = end
+            audio_seg = audio[int( start_time * 1000) : min(max_len, int(end_time * 1000) + 80)]
+            # segment file name
+            fname = f"{audio_name}_seg{s_ind}.wav"
+            # filter out the segment shorter than 1.0s and longer than 10s
+            save = audio_seg.duration_seconds > 1.0 and \
+                    audio_seg.duration_seconds < 10.
+            print(audio_seg.duration_seconds)
+            if save:
+                output_file = os.path.join(wavs_folder, fname)
+                audio_seg.export(output_file, format='wav')
+            if s_ind < len(timestamps) - 1:
+                start_time = max(0, timestamps[s_ind+1][0] - 0.08)
+
+        return wavs_folder
+
+    def get_se(self, audio_path, vc_model, target_dir='processed', vad=True, timestamps=None):
         device = vc_model.device
         version = vc_model.version
         print("OpenVoice version:", version)
@@ -151,16 +197,15 @@ class OpenVoiceConverter(ConverterBase):
         audio_name = f"{os.path.basename(audio_path).rsplit('.', 1)[0]}_{version}_{se_extractor.hash_numpy_array(audio_path)}"
         se_path = os.path.join(target_dir, audio_name, 'se.pth')
 
-        # if os.path.isfile(se_path):
-        #     se = torch.load(se_path).to(device)
-        #     return se, audio_name
-        # if os.path.isdir(audio_path):
-        #     wavs_folder = audio_path
-
-        if vad:
-            wavs_folder = self.split_audio_vad(audio_path, target_dir=target_dir, audio_name=audio_name)
+        if not timestamps:
+            if vad:
+                wavs_folder = self.split_audio_vad(audio_path, target_dir=target_dir, audio_name=audio_name)
+            else:
+                wavs_folder = self.split_audio_whisper(audio_path, target_dir=target_dir, audio_name=audio_name)
+        elif timestamps == 'all':
+            wavs_folder = self.split_audio_all(audio_path, target_dir=target_dir, audio_name=audio_name)
         else:
-            wavs_folder = self.split_audio_whisper(audio_path, target_dir=target_dir, audio_name=audio_name)
+            wavs_folder = self.split_audio_timestamp(audio_path, timestamps, target_dir=target_dir, audio_name=audio_name)
 
         from glob import glob
         audio_segs = glob(f'{wavs_folder}/*.wav')
@@ -169,14 +214,14 @@ class OpenVoiceConverter(ConverterBase):
             print('No audio segments found!, use origin tts audio')
             return None, None
         
-        return vc_model.extract_se(audio_segs, se_save_path=se_path), audio_name
+        return vc_model.extract_se(audio_segs, se_save_path=se_path)
 
-    def convert(self, source_wav, target_wav):
+    def convert(self, source_wav, target_wav, source_timestamps=None, target_timestamps=None):
         start = time.perf_counter()
         # TODO: source wav 都是TTS語者，可以共用se節省時間
         # TODO: target wav 截到差不多5秒就可以停止了，比較real time，應該是要先用perf_counter看看 get_se 的 bottleneck是哪幾行程式
-        source_se, source_audio_name = self.get_se(source_wav, self.tone_color_converter, vad=True)
-        target_se, target_audio_name = self.get_se(target_wav, self.tone_color_converter, vad=True)
+        source_se = self.get_se(source_wav, self.tone_color_converter, vad=True, timestamps=source_timestamps)
+        target_se = self.get_se(target_wav, self.tone_color_converter, vad=True, timestamps=target_timestamps)
         end = time.perf_counter()
         print(f'Get source and target se: {end - start:.4f}s')
 
