@@ -79,18 +79,19 @@ class AzureEnd2End:
                 start = (offset / 10000000)
                 end = start + (duration / 10000000)
                 asr_timestamps.append((start, end))
-            print("{}:\n {}\n\tTranslations: {}\n\tResult Json: {}\n".format(
-                event_type, evt, evt.result.translations.items(), evt.result.json))
+                print("{}:\tTranslations: {}\n\tResult Json: {}".format(
+                    event_type, evt.result.translations.items(), evt.result.json))
             
         def stop_cb(evt: speechsdk.SessionEventArgs):
             """callback that signals to stop continuous recognition upon receiving an event `evt`"""
-            print('CLOSING on {}'.format(evt))
+            # print('CLOSING on {}'.format(evt))
             nonlocal done
             done = True
 
         def canceled_cb(evt: speechsdk.translation.TranslationRecognitionCanceledEventArgs):
-            print('CANCELED:\n\tReason:{}\n'.format(evt.result.reason))
-            print('\tDetails: {} ({})'.format(evt, evt.result.cancellation_details.error_details))
+            pass
+            # print('CANCELED:\n\tReason:{}\n'.format(evt.result.reason))
+            # print('\tDetails: {} ({})'.format(evt, evt.result.cancellation_details.error_details))
 
         def synthesis_callback(evt: speechsdk.translation.TranslationRecognitionEventArgs):
             """
@@ -103,8 +104,8 @@ class AzureEnd2End:
                 with open(temp_synthesis_file, 'wb+') as f:
                     f.write(synthesis_bytes)
                 temp_synthesis_files.append(temp_synthesis_file)
-            print('SYNTHESIZING {}\n\treceived {} bytes of audio. Reason: {}'.format(
-                evt, len(evt.result.audio), evt.result.reason))
+            print('SYNTHESIZING: \treceived {} bytes of audio. Reason: {}'.format(
+                len(evt.result.audio), evt.result.reason))
             
         def save_synthesis(temp_synthesis_files, temp_file):
             combined_audio = AudioSegment.empty()
@@ -124,8 +125,8 @@ class AzureEnd2End:
         translation_recognizer = speechsdk.translation.TranslationRecognizer(translation_config=speech_translation_config, audio_config=audio_config)
 
         # connect callback functions to the events fired by the recognizer
-        translation_recognizer.session_started.connect(lambda evt: print('SESSION STARTED: {}'.format(evt)))
-        translation_recognizer.session_stopped.connect(lambda evt: print('SESSION STOPPED {}'.format(evt)))
+        # translation_recognizer.session_started.connect(lambda evt: print('SESSION STARTED: {}'.format(evt)))
+        # translation_recognizer.session_stopped.connect(lambda evt: print('SESSION STOPPED {}'.format(evt)))
         # event for intermediate results
         translation_recognizer.recognizing.connect(lambda evt: result_callback('RECOGNIZING', evt))
         # event for final result
