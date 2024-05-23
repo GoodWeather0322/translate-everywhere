@@ -8,6 +8,7 @@ import azure.cognitiveservices.speech as speechsdk
 import torchaudio
 from dotenv import load_dotenv
 import os
+from pydub import AudioSegment
 
 # Load environment variables from a .env file
 load_dotenv()
@@ -86,42 +87,112 @@ class AzureEnd2End:
             print(f'Speech Recognition canceled: {result.cancellation_details}')
 
         return source_text, target_text
+    
+    def translation_continuoue(self, audio, temp_file):
+        """performs continuous speech translation from an audio file"""
+
+        done = False
+        source_text = []
+        target_text = []
+        temp_synthesis_files = []
+
+        def result_callback(event_type: str, evt: speechsdk.translation.TranslationRecognitionEventArgs):
+            """callback to display a translation result"""
+            nonlocal source_text, target_text
+            if event_type == 'RECOGNIZED':
+                source_text.append(evt.result.text)
+                target_text.append(evt.result.translations[self.target_language if self.target_language != 'zh' else 'zh-Hant'])
+            print("{}:\n {}\n\tTranslations: {}\n\tResult Json: {}\n".format(
+                event_type, evt, evt.result.translations.items(), evt.result.json))
+            
+        def stop_cb(evt: speechsdk.SessionEventArgs):
+            """callback that signals to stop continuous recognition upon receiving an event `evt`"""
+            print('CLOSING on {}'.format(evt))
+            nonlocal done
+            done = True
+
+        def canceled_cb(evt: speechsdk.translation.TranslationRecognitionCanceledEventArgs):
+            print('CANCELED:\n\tReason:{}\n'.format(evt.result.reason))
+            print('\tDetails: {} ({})'.format(evt, evt.result.cancellation_details.error_details))
+
+        def synthesis_callback(evt: speechsdk.translation.TranslationRecognitionEventArgs):
+            """
+            callback for the synthesis event
+            """
+            nonlocal temp_synthesis_files
+            synthesis_bytes = evt.result.audio
+            if len(synthesis_bytes) > 0:
+                temp_synthesis_file = temp_file.replace('.wav', f'_{len(temp_synthesis_files)}.wav')
+                with open(temp_synthesis_file, 'wb+') as f:
+                    f.write(synthesis_bytes)
+                temp_synthesis_files.append(temp_synthesis_file)
+            print('SYNTHESIZING {}\n\treceived {} bytes of audio. Reason: {}'.format(
+                evt, len(evt.result.audio), evt.result.reason))
+            
+        def save_synthesis(temp_synthesis_files, temp_file):
+            combined_audio = AudioSegment.empty()
+            for temp_synthesis_file in temp_synthesis_files:
+                audio = AudioSegment.from_file(temp_synthesis_file)
+                combined_audio += audio
+
+            combined_audio.export(temp_file, format="wav")
+            for temp_synthesis_file in temp_synthesis_files:
+                os.remove(temp_synthesis_file)
+                
+        speech_translation_config = speechsdk.translation.SpeechTranslationConfig(subscription=self.speech_key, region=self.service_region)
+        speech_translation_config.speech_recognition_language=self.lang_mapping[self.source_language]
+        speech_translation_config.add_target_language(self.target_language if self.target_language != 'zh' else 'zh-Hant')
+        speech_translation_config.voice_name = self.lang2voice[self.target_language]
+        audio_config = speechsdk.audio.AudioConfig(filename=audio)
+        translation_recognizer = speechsdk.translation.TranslationRecognizer(translation_config=speech_translation_config, audio_config=audio_config)
+
+        # connect callback functions to the events fired by the recognizer
+        translation_recognizer.session_started.connect(lambda evt: print('SESSION STARTED: {}'.format(evt)))
+        translation_recognizer.session_stopped.connect(lambda evt: print('SESSION STOPPED {}'.format(evt)))
+        # event for intermediate results
+        translation_recognizer.recognizing.connect(lambda evt: result_callback('RECOGNIZING', evt))
+        # event for final result
+        translation_recognizer.recognized.connect(lambda evt: result_callback('RECOGNIZED', evt))
+        # cancellation event
+        translation_recognizer.canceled.connect(canceled_cb)
+
+        # stop continuous recognition on either session stopped or canceled events
+        translation_recognizer.session_stopped.connect(stop_cb)
+        translation_recognizer.canceled.connect(stop_cb)
+        # connect callback to the synthesis event
+        translation_recognizer.synthesizing.connect(synthesis_callback)
+
+        translation_recognizer.start_continuous_recognition()
+        while not done:
+            time.sleep(0.1)
+        translation_recognizer.stop_continuous_recognition()
+        if len(temp_synthesis_files) > 0:
+            save_synthesis(temp_synthesis_files, temp_file)
+        return ' '.join(source_text), ' '.join(target_text)
+        
 
     def end2end_flow(self, source_language, target_language, audio):    
         
         self.source_language = source_language
         self.target_language = target_language
         audio = self.convert_16k(audio)
-        speech_translation_config = speechsdk.translation.SpeechTranslationConfig(subscription=self.speech_key, region=self.service_region)
-        speech_translation_config.speech_recognition_language=self.lang_mapping[source_language]
-        speech_translation_config.add_target_language(self.target_language if self.target_language != 'zh' else 'zh-Hant')
-
-        audio_config = speechsdk.audio.AudioConfig(filename=audio)
-
-        speech_translation_config.voice_name = self.lang2voice[target_language]
-        translation_recognizer = speechsdk.translation.TranslationRecognizer(translation_config=speech_translation_config, audio_config=audio_config)
-
         temp_file = audio.replace('_16k', '').replace('.wav', '_azure_temp.wav')
-        translation_recognizer.synthesizing.connect(self.callback_with_params(temp_file))
-        
-        # self.temp_file = '/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/test_code/azure_temp.wav'
+
         start = time.perf_counter() 
-        result = translation_recognizer.recognize_once()
+        source_text, target_text = self.translation_continuoue(audio, temp_file)
         end = time.perf_counter()
         print(f'translation time: {end - start}')
-        print(result)
-        source_text, target_text = self.get_result_text(reason=result.reason, result=result)
 
         output_file = None
-        if result.reason == speechsdk.ResultReason.TranslatedSpeech:
+        if source_text != '' and target_text != '':
             start = time.perf_counter()
             output_file = self.converter.convert(temp_file, audio)
             end = time.perf_counter()
             print(f'Conversion time: {end - start}')
 
-        if source_text is None:
+        if source_text == '':
             source_text = 'No speech could be recognized'
-        if target_text is None:
+        if target_text == '':
             target_text = 'No text could be translated'
 
         return source_text, target_text, output_file
