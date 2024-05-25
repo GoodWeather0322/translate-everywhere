@@ -23,7 +23,7 @@ class ASRBase:
     def transcribe(self, audio):
         raise NotImplementedError
     
-    def transcribe_flow(self, audio):
+    def transcribe_pipeline(self, audio):
         raise NotImplementedError
     
 
@@ -42,7 +42,7 @@ class WhisperASR(ASRBase):
     def recv_audio_offline(self, audio):
         return super().recv_audio_offline(audio)
 
-    def transcribe_flow(self, audio, language):
+    def transcribe_pipeline(self, audio, language):
 
         if not isinstance(audio, np.ndarray):
             audio = self.recv_audio_offline(audio)
@@ -62,7 +62,7 @@ class AzureASR(ASRBase):
     def __init__(self):
         pass
     
-    def transcribe_flow(self, audio, language):
+    def transcribe_pipeline(self, audio, language):
 
         def convert_16k(wav_file):
             data, sr = torchaudio.load(wav_file)

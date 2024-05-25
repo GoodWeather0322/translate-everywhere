@@ -37,7 +37,7 @@ class EdgeTTS(TTSBase):
         communicate = edge_tts.Communicate(text, voice)
         await communicate.save(output)
 
-    async def tts_flow(self, language, text):
+    async def tts_pipeline(self, language, text):
         voice = await self.lang_voice_sellection(language)
         temp_file = '/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/test_code/temp.wav'
         await self.speak(text, voice, temp_file)

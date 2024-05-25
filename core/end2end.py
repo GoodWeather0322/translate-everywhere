@@ -20,10 +20,10 @@ class End2End:
         self.tts_model = EdgeTTS()
         self.converter = OpenVoiceConverter()
 
-    def end2end_flow(self, source_language, target_language, audio):
-        transcription = self.asr_model.transcribe_flow(audio, source_language)
-        translate_text = self.translate_model.translate_flow(source_language, target_language, transcription)
-        temp_file = asyncio.run(self.tts_model.tts_flow(target_language, translate_text))
+    def end2end_pipeline(self, source_language, target_language, audio):
+        transcription = self.asr_model.transcribe_pipeline(audio, source_language)
+        translate_text = self.translate_model.translate_pipeline(source_language, target_language, transcription)
+        temp_file = asyncio.run(self.tts_model.tts_pipeline(target_language, translate_text))
         start = time.perf_counter()
         output_file = self.converter.convert(temp_file, audio)
         end = time.perf_counter()
@@ -59,7 +59,7 @@ class AzureEnd2End:
             return new_wav_file
         return wav_file
     
-    def translation_continuoue(self, audio, temp_file):
+    def translation_continous(self, audio, temp_file):
         """performs continuous speech translation from an audio file"""
 
         done = False
@@ -149,7 +149,7 @@ class AzureEnd2End:
         return ' '.join(source_text), ' '.join(target_text), asr_timestamps
         
 
-    def end2end_flow(self, source_language, target_language, audio, vc_model_name=None):    
+    def end2end_pipeline(self, source_language, target_language, audio, vc_model_name=None):    
         
         self.source_language = source_language
         self.target_language = target_language
@@ -157,7 +157,7 @@ class AzureEnd2End:
         temp_file = audio.replace('_16k', '').replace('.wav', '_azure_temp.wav')
 
         start = time.perf_counter() 
-        source_text, target_text, asr_timestamps = self.translation_continuoue(audio, temp_file)
+        source_text, target_text, asr_timestamps = self.translation_continous(audio, temp_file)
         end = time.perf_counter()
         print(f'translation time: {end - start}')
         output_file = None

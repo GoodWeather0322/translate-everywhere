@@ -65,7 +65,7 @@ class LLMTranslator(TranslatorBase):
         translate_text = llm_output.split(':')[1]
         return translate_text
 
-    def translate_flow(self, source_language, target_language, text):
+    def translate_pipeline(self, source_language, target_language, text):
         if source_language not in self.multilingual_prompt_dict:
             print('source_language not support at this time')
             return False
