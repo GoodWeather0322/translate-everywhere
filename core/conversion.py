@@ -41,59 +41,6 @@ class OpenVoiceConverter(ConverterBase):
     
         print(f'Load tone color converter from {ckpt_converter}')
 
-    # def split_audio_whisper(self, audio_path, target_dir='processed', audio_name=None):
-    #     audio = AudioSegment.from_file(audio_path)
-    #     max_len = len(audio)
-
-    #     target_folder = os.path.join(target_dir, audio_name)
-        
-    #     segments, info = self.whisper_model.transcribe(audio_path, beam_size=5, word_timestamps=True)
-    #     segments = list(segments)    
-
-    #     # create directory
-    #     os.makedirs(target_folder, exist_ok=True)
-    #     wavs_folder = os.path.join(target_folder, 'wavs')
-    #     os.makedirs(wavs_folder, exist_ok=True)
-
-    #     # segments
-    #     s_ind = 0
-    #     start_time = None
-        
-    #     for k, w in enumerate(segments):
-    #         # process with the time
-    #         if k == 0:
-    #             start_time = max(0, w.start)
-
-    #         end_time = w.end
-
-    #         # calculate confidence
-    #         if len(w.words) > 0:
-    #             confidence = sum([s.probability for s in w.words]) / len(w.words)
-    #         else:
-    #             confidence = 0.
-    #         # clean text
-    #         text = w.text.replace('...', '')
-
-    #         # left 0.08s for each audios
-    #         audio_seg = audio[int( start_time * 1000) : min(max_len, int(end_time * 1000) + 80)]
-
-    #         # segment file name
-    #         fname = f"{audio_name}_seg{s_ind}.wav"
-
-    #         # filter out the segment shorter than 1.5s and longer than 20s
-    #         save = audio_seg.duration_seconds > 1.5 and \
-    #                 audio_seg.duration_seconds < 20. and \
-    #                 len(text) >= 2 and len(text) < 200 
-
-    #         if save:
-    #             output_file = os.path.join(wavs_folder, fname)
-    #             audio_seg.export(output_file, format='wav')
-
-    #         if k < len(segments) - 1:
-    #             start_time = max(0, segments[k+1].start - 0.08)
-
-    #         s_ind = s_ind + 1
-    #     return wavs_folder
 
     def split_audio_vad(self, audio_path, target_dir='processed', audio_name=None):
         audio = AudioSegment.from_file(audio_path)
@@ -200,8 +147,6 @@ class OpenVoiceConverter(ConverterBase):
         if not timestamps:
             if vad:
                 wavs_folder = self.split_audio_vad(audio_path, target_dir=target_dir, audio_name=audio_name)
-            else:
-                wavs_folder = self.split_audio_whisper(audio_path, target_dir=target_dir, audio_name=audio_name)
         elif timestamps == 'all':
             wavs_folder = self.split_audio_all(audio_path, target_dir=target_dir, audio_name=audio_name)
         else:
