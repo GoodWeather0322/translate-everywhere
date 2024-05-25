@@ -8,6 +8,9 @@ import time
 from pydub import AudioSegment
 from pyannote.audio import Model
 from pyannote.audio.pipelines import VoiceActivityDetection
+import soundfile
+
+from core.onnx_infer.vc_inference import OnnxRVC
 
 class ConverterBase:
     def __init__(self):
@@ -186,4 +189,41 @@ class OpenVoiceConverter(ConverterBase):
         end = time.perf_counter()
         print(f'Convert: {end - start:.4f}s')
         
+        return save_path
+    
+class RVCConverter(ConverterBase):
+    def __init__(self):
+        super().__init__()
+        customs_model_with_name = {
+            'evonne': "/mnt/disk1/chris/Retrieval-based-Voice-Conversion-WebUI/assets/onnx_weights/evo-20240524_e35_s1575.onnx", 
+            'chris': "/mnt/disk1/chris/Retrieval-based-Voice-Conversion-WebUI/assets/onnx_weights/evo-20240524_e35_s1575.onnx", 
+        }
+        
+        self.sampling_rate = 40000  # 采样率
+        self.get_all_custom_models(customs_model_with_name)
+
+    def get_all_custom_models(self, customs_model_with_name):
+        self.name2model = {}
+        vec_name = (
+            "vec-768-layer-12"  # 内部自动补齐为 f"pretrained/{vec_name}.onnx" 需要onnx的vec模型
+        )
+        hop_size = 512
+        for name, path in customs_model_with_name.items():
+            print(f"Loading model {name} from {path}")
+            model = OnnxRVC(
+                path, vec_path=vec_name, sr=self.sampling_rate, hop_size=hop_size, device="cuda"
+            )
+            self.name2model[name] = model
+
+    def convert(self, wav_path, model_name):
+        if model_name not in self.name2model:
+            print(f"Model {model_name} not found!")
+            return None
+        save_path = wav_path.replace('_azure_temp', '_final_conversion')
+        f0_up_key = 0  # 升降调
+        sid = 0  # 角色ID
+        f0_method = "dio"  # F0提取算法
+        model = self.name2model[model_name]
+        audio = model.inference(wav_path, sid, f0_method=f0_method, f0_up_key=f0_up_key)
+        soundfile.write(save_path, audio, self.sampling_rate)
         return save_path

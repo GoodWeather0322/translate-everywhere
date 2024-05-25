@@ -1,7 +1,7 @@
 from core.asr import WhisperASR, AzureASR
 from core.translator import LLMTranslator
 from core.tts import EdgeTTS
-from core.conversion import OpenVoiceConverter
+from core.conversion import OpenVoiceConverter, RVCConverter
 import asyncio
 import time
 import azure.cognitiveservices.speech as speechsdk
@@ -19,7 +19,6 @@ class End2End:
         self.translate_model = LLMTranslator()
         self.tts_model = EdgeTTS()
         self.converter = OpenVoiceConverter()
-
 
     def end2end_flow(self, source_language, target_language, audio):
         transcription = self.asr_model.transcribe_flow(audio, source_language)
@@ -49,6 +48,7 @@ class AzureEnd2End:
             'pl' : 'pl-PL-AgnieszkaNeural'
         }
         self.converter = OpenVoiceConverter()
+        self.custom_converter = RVCConverter()
 
     def convert_16k(self, wav_file):
         data, sr = torchaudio.load(wav_file)
@@ -149,7 +149,7 @@ class AzureEnd2End:
         return ' '.join(source_text), ' '.join(target_text), asr_timestamps
         
 
-    def end2end_flow(self, source_language, target_language, audio):    
+    def end2end_flow(self, source_language, target_language, audio, vc_model_name=None):    
         
         self.source_language = source_language
         self.target_language = target_language
@@ -160,11 +160,13 @@ class AzureEnd2End:
         source_text, target_text, asr_timestamps = self.translation_continuoue(audio, temp_file)
         end = time.perf_counter()
         print(f'translation time: {end - start}')
-
         output_file = None
         if source_text != '' and target_text != '':
             start = time.perf_counter()
-            output_file = self.converter.convert(temp_file, audio, source_timestamps='all', target_timestamps=asr_timestamps)
+            if vc_model_name:
+                output_file = self.custom_converter.convert(temp_file, model_name=vc_model_name)
+            else:
+                output_file = self.converter.convert(temp_file, audio, source_timestamps='all', target_timestamps=asr_timestamps)
             end = time.perf_counter()
             print(f'Conversion time: {end - start}')
 
