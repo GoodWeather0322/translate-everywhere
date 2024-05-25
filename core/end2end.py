@@ -42,12 +42,13 @@ class AzureEnd2End:
             'fr': 'fr-FR',
         }
         self.lang2voice = {
-            'zh' : 'zh-TW-HsiaoChenNeural',
-            'en' : 'en-US-AvaNeural', 
-            'ja' : 'ja-JP-KeitaNeural', 
-            'ko' : 'ko-KR-HyunsuNeural', 
-            'pl' : 'pl-PL-AgnieszkaNeural', 
-            'fr' : 'fr-FR-DeniseNeural', 
+            # language code : [female voice name, male voice name]
+            'zh' : ['zh-TW-HsiaoChenNeural', 'zh-TW-YunJheNeural'],
+            'en' : ['en-US-AvaNeural', 'en-US-AndrewNeural'], 
+            'ja' : ['ja-JP-NanamiNeural', 'ja-JP-KeitaNeural'], 
+            'ko' : ['ko-KR-SunHiNeural', 'ko-KR-InJoonNeural'], 
+            'pl' : ['pl-PL-AgnieszkaNeural', 'pl-PL-MarekNeural'], 
+            'fr' : ['fr-FR-DeniseNeural', 'fr-FR-HenriNeural'], 
         }
         self.converter = OpenVoiceConverter()
         self.custom_converter = RVCConverter()
@@ -125,7 +126,7 @@ class AzureEnd2End:
         speech_translation_config = speechsdk.translation.SpeechTranslationConfig(subscription=self.speech_key, region=self.service_region)
         speech_translation_config.speech_recognition_language=self.lang_mapping[self.source_language]
         speech_translation_config.add_target_language(self.target_language if self.target_language != 'zh' else 'zh-Hant')
-        speech_translation_config.voice_name = self.lang2voice[self.target_language]
+        speech_translation_config.voice_name = self.lang2voice[self.target_language][0]
         audio_config = speechsdk.audio.AudioConfig(filename=audio)
         translation_recognizer = speechsdk.translation.TranslationRecognizer(translation_config=speech_translation_config, audio_config=audio_config)
 
