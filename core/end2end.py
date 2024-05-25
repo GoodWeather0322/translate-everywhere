@@ -39,16 +39,21 @@ class AzureEnd2End:
             'ja': 'ja-JP',
             'ko': 'ko-KR',
             'pl': 'pl-PL',
+            'fr': 'fr-FR',
         }
         self.lang2voice = {
             'zh' : 'zh-TW-HsiaoChenNeural',
             'en' : 'en-US-AvaNeural', 
             'ja' : 'ja-JP-KeitaNeural', 
             'ko' : 'ko-KR-HyunsuNeural', 
-            'pl' : 'pl-PL-AgnieszkaNeural'
+            'pl' : 'pl-PL-AgnieszkaNeural', 
+            'fr' : 'fr-FR-DeniseNeural', 
         }
         self.converter = OpenVoiceConverter()
         self.custom_converter = RVCConverter()
+
+    def get_support_languages(self):
+        return list(self.lang_mapping.keys())
 
     def convert_16k(self, wav_file):
         data, sr = torchaudio.load(wav_file)

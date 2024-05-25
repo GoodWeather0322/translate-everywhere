@@ -23,9 +23,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 model = AzureEnd2End()
 
+@router.get("/get-support-languages")
+async def get_support_languages():
+    """
+    Retrieve the list of supported languages for translation.
+
+    Returns:
+        A list of language codes that the translation model supports.
+    """
+    return model.get_support_languages()
+
 
 @router.post("/speech-translate")
-async def speech_translate(file: UploadFile, source_lang: str = Form(...), target_lang: str = Form(...)):
+async def speech_translate(file: UploadFile = File(..., description="audio file to be translated"), 
+                           source_lang: str = Form(..., description="source language code"), 
+                           target_lang: str = Form(..., description="target language code")):
     """
     This function handles the speech translation endpoint.
     
@@ -74,7 +86,10 @@ async def speech_translate(file: UploadFile, source_lang: str = Form(...), targe
     })
 
 @router.post("/speech-translate-custom")
-async def speech_translate_custom(file: UploadFile, source_lang: str = Form(...), target_lang: str = Form(...), name: str = Form(...)):
+async def speech_translate_custom(file: UploadFile = File(..., description="audio file to be translated"), 
+                                  source_lang: str = Form(..., description="source language code"), 
+                                  target_lang: str = Form(..., description="target language code"), 
+                                  name: str = Form(..., description="custom model name: ['evonne', 'laura']")):
     """
     This function handles the speech translation endpoint with a custom name parameter.
     
@@ -82,7 +97,7 @@ async def speech_translate_custom(file: UploadFile, source_lang: str = Form(...)
     - file: Uploaded audio file
     - source_lang: Source language for translation
     - target_lang: Target language for translation
-    - name: Custom name for the translation session ['evonne', 'laura']
+    - name: Custom name for the translation session
     
     Returns:
     JSONResponse with source text [source_text], target text[target_text], and base64 audio file [file]
