@@ -55,6 +55,9 @@ class AzureEnd2End:
 
     def get_support_languages(self):
         return list(self.lang_mapping.keys())
+    
+    def get_custom_models(self):
+        return list(self.custom_converter.customs_model_with_name.keys())
 
     def convert_16k(self, wav_file):
         data, sr = torchaudio.load(wav_file)

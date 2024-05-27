@@ -33,6 +33,16 @@ async def get_support_languages():
     """
     return model.get_support_languages()
 
+@router.get("/get-custom-models")
+async def get_custom_models():
+    """
+    Retrieve the list of custom models.
+
+    Returns:
+        A list of custom models.
+    """
+    return model.get_custom_models()
+
 
 @router.post("/speech-translate")
 async def speech_translate(file: UploadFile = File(..., description="audio file to be translated"), 

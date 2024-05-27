@@ -194,13 +194,13 @@ class OpenVoiceConverter(ConverterBase):
 class RVCConverter(ConverterBase):
     def __init__(self):
         super().__init__()
-        customs_model_with_name = {
+        self.customs_model_with_name = {
             'evonne': "/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/core/onnx_infer/onnx_weights/evo-20240524_e35_s1575.onnx", 
             'laura': "/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/core/onnx_infer/onnx_weights/laura-test.onnx"
         }
         
         self.sampling_rate = 40000  # 采样率
-        self.get_all_custom_models(customs_model_with_name)
+        self.get_all_custom_models(self.customs_model_with_name)
 
     def get_all_custom_models(self, customs_model_with_name):
         self.name2model = {}
