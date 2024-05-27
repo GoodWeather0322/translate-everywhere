@@ -160,7 +160,7 @@ class OpenVoiceConverter(ConverterBase):
         if len(audio_segs) == 0:
             # raise NotImplementedError('No audio segments found!')
             print('No audio segments found!, use origin tts audio')
-            return None, None
+            return None
         
         return vc_model.extract_se(audio_segs, se_save_path=se_path)
 
