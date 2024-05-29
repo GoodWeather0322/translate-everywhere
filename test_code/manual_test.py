@@ -8,6 +8,6 @@ from core.end2end import End2End, AzureEnd2End
 model = AzureEnd2End()
 test_file = '/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/jupyter_test/test.wav'
 start = time.perf_counter()
-final_text = model.end2end_pipeline('zh', 'ja', test_file)
+final_text = model.sts_end2end_pipeline('zh', 'ja', test_file)
 end = time.perf_counter()
 print(f'TOTAL Time taken: {end - start}')

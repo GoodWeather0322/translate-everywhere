@@ -1,7 +1,7 @@
 import requests
 import base64
 
-url = "http://localhost:55699/v1/end2end/speech-translate-custom"
+url = "http://localhost:55699/v1/end2end/speech-translate"
 file_path = "/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/uploaded_audio/20240521/20240521132110.wav"
 file_path = "/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/uploaded_audio/20240522/20240522112311.wav"
 file_path = "/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/uploaded_audio/20240522/20240522170117.wav"
@@ -10,7 +10,7 @@ file_path = "/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/uploaded_a
 save_path = "/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/test_code/test_return.wav"
 
 with open(file_path, "rb") as file:
-    data = {"source_lang": "zh", "target_lang": "pl", "name": "evonne"}
+    data = {"source_lang": "zh", "target_lang": "fr", "name": "evonne"}
     files = {"file": file}
     response = requests.post(url, files=files, data=data)
 
