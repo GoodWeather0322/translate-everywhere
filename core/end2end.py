@@ -5,6 +5,9 @@ from core.conversion import OpenVoiceConverter, RVCConverter
 import asyncio
 import time
 import azure.cognitiveservices.speech as speechsdk
+from azure.ai.translation.text import TextTranslationClient, TranslatorCredential
+from azure.ai.translation.text.models import InputTextItem
+from azure.core.exceptions import HttpResponseError
 import torchaudio
 from dotenv import load_dotenv
 import os
@@ -33,6 +36,7 @@ class End2End:
 class AzureEnd2End:
     def __init__(self):
         self.speech_key, self.service_region = os.getenv('AZURE_SPEECH_KEY'), os.getenv('AZURE_SERVICE_REGION')
+        self.translation_key, self.translation_endpoint, self.translation_region = os.getenv('AZURE_TRANSLATION_KEY'), os.getenv('AZURE_TRANSLATION_ENDPOINT'), os.getenv('AZURE_TRANSLATION_REGION')
         self.lang_mapping = {
             'zh': 'zh-TW',
             'en': 'en-US',
@@ -68,7 +72,7 @@ class AzureEnd2End:
             return new_wav_file
         return wav_file
     
-    def translation_continous(self, audio, temp_file):
+    def speech_translation_continous(self, audio, temp_file):
         """performs continuous speech translation from an audio file"""
 
         done = False
@@ -157,8 +161,43 @@ class AzureEnd2End:
             save_synthesis(temp_synthesis_files, temp_file)
         return ' '.join(source_text), ' '.join(target_text), asr_timestamps
         
+    def text_translation(self, text):
+        credential = TranslatorCredential(self.translation_key, self.translation_region)
+        text_translator = TextTranslationClient(endpoint=self.translation_endpoint, credential=credential)
 
-    def end2end_pipeline(self, source_language, target_language, audio, vc_model_name=None):    
+        target_text = ''
+        
+        try:
+            input_text_elements = [ InputTextItem(text = text) ]
+
+            response = text_translator.translate(content = input_text_elements, to = [self.target_language], from_parameter = self.source_language)
+            translation = response[0] if response else None
+
+            if translation:
+                print(f"Text was translated to: '{translation.translations[0].to}' and the result is: '{translation.translations[0].text}'.")
+                target_text = translation.translations[0].text
+
+        except HttpResponseError as exception:
+            print(f"Error Code: {exception.error.code}")
+            print(f"Message: {exception.error.message}")
+
+        return target_text
+    
+    def text_to_speech(self, target_text, temp_file):
+        speech_config = speechsdk.SpeechConfig(subscription=self.speech_key, region=self.service_region)
+        speech_config.speech_synthesis_voice_name = self.lang2voice[self.target_language][0]
+        audio_config = speechsdk.audio.AudioOutputConfig(filename=temp_file)
+        speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
+        result = speech_synthesizer.speak_text_async(target_text).get()
+        if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+            print("Speech synthesized for text [{}], and the audio was saved to [{}]".format(target_text, temp_file))
+        elif result.reason == speechsdk.ResultReason.Canceled:
+            cancellation_details = result.cancellation_details
+            print("Speech synthesis canceled: {}".format(cancellation_details.reason))
+            if cancellation_details.reason == speechsdk.CancellationReason.Error:
+                print("Error details: {}".format(cancellation_details.error_details))
+
+    def sts_end2end_pipeline(self, source_language, target_language, audio, vc_model_name=None):    
         
         self.source_language = source_language
         self.target_language = target_language
@@ -166,7 +205,7 @@ class AzureEnd2End:
         temp_file = audio.replace('_16k', '').replace('.wav', '_azure_temp.wav')
 
         start = time.perf_counter() 
-        source_text, target_text, asr_timestamps = self.translation_continous(audio, temp_file)
+        source_text, target_text, asr_timestamps = self.speech_translation_continous(audio, temp_file)
         end = time.perf_counter()
         print(f'translation time: {end - start}')
         output_file = None
@@ -176,6 +215,41 @@ class AzureEnd2End:
                 output_file = self.custom_converter.convert(temp_file, model_name=vc_model_name)
             else:
                 output_file = self.converter.convert(temp_file, audio, source_timestamps='all', target_timestamps=asr_timestamps)
+            end = time.perf_counter()
+            print(f'Conversion time: {end - start}')
+
+        if source_text == '':
+            source_text = 'No speech could be recognized'
+        if target_text == '':
+            target_text = 'No text could be translated'
+
+        return source_text, target_text, output_file
+    
+
+    def tts_end2end_pipeline(self, source_language, target_language, source_text, audio, vc_model_name=None):
+
+        self.source_language = source_language
+        self.target_language = target_language
+        temp_file = audio.replace('_16k', '').replace('.wav', '_azure_temp.wav')
+
+        start = time.perf_counter() 
+        target_text = self.text_translation(source_text)
+        end = time.perf_counter()
+        print(f'translation time: {end - start}')
+
+        output_file = None
+        if source_text != '' and target_text != '':
+            start = time.perf_counter()
+            self.text_to_speech(target_text, temp_file)
+            end = time.perf_counter()
+            print(f'Text to Speech time: {end - start}')
+
+            start = time.perf_counter()
+            if vc_model_name:
+                output_file = self.custom_converter.convert(temp_file, model_name=vc_model_name)
+            else:
+                print('didn\'t give vc_model_name, return tts wav file directly')
+                output_file = temp_file
             end = time.perf_counter()
             print(f'Conversion time: {end - start}')
 
