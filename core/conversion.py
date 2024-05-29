@@ -195,7 +195,7 @@ class RVCConverter(ConverterBase):
     def __init__(self):
         super().__init__()
         self.customs_model_with_name = {
-            'evonne': "/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/core/onnx_infer/onnx_weights/evo-20240524_e35_s1575.onnx", 
+            'evonne': "/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/core/onnx_infer/onnx_weights/evo-20240528.onnx", 
             'laura': "/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/core/onnx_infer/onnx_weights/laura-test.onnx"
         }
         
