@@ -2,6 +2,13 @@
 
 > 本應用程式支持多國語言即時對話，可以與不同語言的人士進行順暢交流。選擇多種聲音模型，根據個人喜好進行語音輸出。此外，我們還提供獨特的聲音複製功能，讓您用自己的聲音念出翻譯文字，提升交流的自然流暢度。
 
+## 📷 Screenshot
+
+<p align="center">
+<img src="./translation-voice-client/public/screenshot01.png" height="200px" alt="介面模式" />
+<img src="./translation-voice-client/public/screenshot02.png" height="200px" alt="錄音中" />
+</p>
+
 ## ✨ Features
 1. 多國語音翻譯：可進行多國語言之間的語音即時翻譯
 2. 聲音模型選擇：使用者可以依據後端提供的參數選擇不同的聲音模型，語音輸出會根據聲音模型變化。
