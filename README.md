@@ -5,8 +5,8 @@
 ## 📷 Screenshot
 
 <p align="center">
-<img src="./translation-voice-client @ f32a88f/public/screenshot01.png" height="200px" alt="介面模式" />
-<img src="./translation-voice-client @ f32a88f/public/screenshot02.png" height="200px" alt="錄音中" />
+<img src="https://github.com/hsuifang/translation-voice-client/raw/main/public/screenshot01.png" height="200px" alt="介面模式" />
+<img src="https://github.com/hsuifang/translation-voice-client/raw/main/public/screenshot02.png" height="200px" alt="錄音中" />
 </p>
 
 ## ✨ Features
