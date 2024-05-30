@@ -61,7 +61,7 @@ class AzureEnd2End:
         return list(self.lang_mapping.keys())
     
     def get_custom_models(self):
-        return list(self.custom_converter.customs_model_with_name.keys())
+        return ['auto'] + list(self.custom_converter.customs_model_with_name.keys())
 
     def convert_16k(self, wav_file):
         data, sr = torchaudio.load(wav_file)
@@ -211,10 +211,10 @@ class AzureEnd2End:
         output_file = None
         if source_text != '' and target_text != '':
             start = time.perf_counter()
-            if vc_model_name:
-                output_file = self.custom_converter.convert(temp_file, model_name=vc_model_name)
-            else:
+            if vc_model_name == 'auto':
                 output_file = self.converter.convert(temp_file, audio, source_timestamps='all', target_timestamps=asr_timestamps)
+            else:
+                output_file = self.custom_converter.convert(temp_file, model_name=vc_model_name)
             end = time.perf_counter()
             print(f'Conversion time: {end - start}')
 
@@ -245,11 +245,12 @@ class AzureEnd2End:
             print(f'Text to Speech time: {end - start}')
 
             start = time.perf_counter()
-            if vc_model_name:
-                output_file = self.custom_converter.convert(temp_file, model_name=vc_model_name)
-            else:
+            if vc_model_name == 'auto':
                 print('didn\'t give vc_model_name, return tts wav file directly')
                 output_file = temp_file
+            else:
+                output_file = self.custom_converter.convert(temp_file, model_name=vc_model_name)
+            
             end = time.perf_counter()
             print(f'Conversion time: {end - start}')
 

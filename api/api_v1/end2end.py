@@ -99,7 +99,7 @@ async def speech_translate(file: UploadFile = File(..., description="audio file 
 async def speech_translate_custom(file: UploadFile = File(..., description="audio file to be translated"), 
                                   source_lang: str = Form(..., description="source language code"), 
                                   target_lang: str = Form(..., description="target language code"), 
-                                  name: str = Form(..., description="custom model name: ['evonne', 'laura']")):
+                                  name: str = Form(..., description="custom model name: ['auto', 'evonne', 'laura']")):
     """
     This function handles the speech translation endpoint with a custom name parameter.
     
@@ -153,7 +153,7 @@ async def speech_translate_custom(file: UploadFile = File(..., description="audi
 async def text_translate_custom(source_text: str = Form(..., description="source text to be translate"), 
                                   source_lang: str = Form(..., description="source language code"), 
                                   target_lang: str = Form(..., description="target language code"), 
-                                  name: str = Form(..., description="custom model name: ['evonne', 'laura']")):
+                                  name: str = Form(..., description="custom model name: ['auto', 'evonne', 'laura']")):
     """
     This function handles the speech translation endpoint with a custom name parameter.
     
