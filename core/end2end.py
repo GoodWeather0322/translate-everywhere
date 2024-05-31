@@ -35,7 +35,7 @@ class End2End:
 
 class AzureEnd2End:
     def __init__(self):
-        self.speech_key, self.service_region = os.getenv('AZURE_SPEECH_KEY'), os.getenv('AZURE_SERVICE_REGION')
+        self.speech_key, self.service_region, self.speech_endpoint = os.getenv('AZURE_CUSTOM_SPEECH_KEY'), os.getenv('AZURE_CUSTOM_SERVICE_REGION'), os.getenv('AZURE_CUSTOM_ENDPOINT')
         self.translation_key, self.translation_endpoint, self.translation_region = os.getenv('AZURE_TRANSLATION_KEY'), os.getenv('AZURE_TRANSLATION_ENDPOINT'), os.getenv('AZURE_TRANSLATION_REGION')
         self.lang_mapping = {
             'zh': 'zh-TW',
@@ -131,8 +131,15 @@ class AzureEnd2End:
             combined_audio.export(temp_file, format="wav")
             for temp_synthesis_file in temp_synthesis_files:
                 os.remove(temp_synthesis_file)
-                
-        speech_translation_config = speechsdk.translation.SpeechTranslationConfig(subscription=self.speech_key, region=self.service_region)
+
+        if self.source_language == 'zh':   
+            # use custom zh-TW model
+            print('use custom zh-TW model')
+            speech_translation_config = speechsdk.translation.SpeechTranslationConfig(subscription=os.getenv('AZURE_CUSTOM_SPEECH_KEY'), region=os.getenv('AZURE_CUSTOM_SERVICE_REGION'))
+            speech_translation_config.endpoint_id=os.getenv('AZURE_CUSTOM_ENDPOINT')
+        else:
+            print('use default model')
+            speech_translation_config = speechsdk.translation.SpeechTranslationConfig(subscription=os.getenv('AZURE_SPEECH_KEY'), region=os.getenv('AZURE_SERVICE_REGION'))
         speech_translation_config.speech_recognition_language=self.lang_mapping[self.source_language]
         speech_translation_config.add_target_language(self.target_language if self.target_language != 'zh' else 'zh-Hant')
         speech_translation_config.voice_name = self.lang2voice[self.target_language][0] if vc_model_name != 'chris' else self.lang2voice[self.target_language][1]
@@ -186,7 +193,7 @@ class AzureEnd2End:
         return target_text
     
     def text_to_speech(self, target_text, temp_file, vc_model_name):
-        speech_config = speechsdk.SpeechConfig(subscription=self.speech_key, region=self.service_region)
+        speech_config = speechsdk.SpeechConfig(subscription=os.getenv('AZURE_SPEECH_KEY'), region=os.getenv('AZURE_SERVICE_REGION'))
         speech_config.speech_synthesis_voice_name = self.lang2voice[self.target_language][0] if vc_model_name != 'chris' else self.lang2voice[self.target_language][1]
         audio_config = speechsdk.audio.AudioOutputConfig(filename=temp_file)
         speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
