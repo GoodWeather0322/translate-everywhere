@@ -196,7 +196,8 @@ class RVCConverter(ConverterBase):
         super().__init__()
         self.customs_model_with_name = {
             'evonne': "/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/core/onnx_infer/onnx_weights/evo-20240528.onnx", 
-            'laura': "/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/core/onnx_infer/onnx_weights/laura-test.onnx"
+            'laura': "/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/core/onnx_infer/onnx_weights/laura-test.onnx", 
+            'chris': "/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/core/onnx_infer/onnx_weights/chris_20240531.onnx"
         }
         
         self.sampling_rate = 40000  # 采样率

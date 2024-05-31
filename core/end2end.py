@@ -44,6 +44,7 @@ class AzureEnd2End:
             'ko': 'ko-KR',
             'pl': 'pl-PL',
             'fr': 'fr-FR',
+            'de': 'de-DE',
         }
         self.lang2voice = {
             # language code : [female voice name, male voice name]
@@ -53,6 +54,7 @@ class AzureEnd2End:
             'ko' : ['ko-KR-SunHiNeural', 'ko-KR-InJoonNeural'], 
             'pl' : ['pl-PL-AgnieszkaNeural', 'pl-PL-MarekNeural'], 
             'fr' : ['fr-FR-DeniseNeural', 'fr-FR-HenriNeural'], 
+            'de' : ['de-DE-KatjaNeural', 'de-DE-ConradNeural'],
         }
         self.converter = OpenVoiceConverter()
         self.custom_converter = RVCConverter()
@@ -72,7 +74,7 @@ class AzureEnd2End:
             return new_wav_file
         return wav_file
     
-    def speech_translation_continous(self, audio, temp_file):
+    def speech_translation_continous(self, audio, temp_file, vc_model_name):
         """performs continuous speech translation from an audio file"""
 
         done = False
@@ -133,7 +135,7 @@ class AzureEnd2End:
         speech_translation_config = speechsdk.translation.SpeechTranslationConfig(subscription=self.speech_key, region=self.service_region)
         speech_translation_config.speech_recognition_language=self.lang_mapping[self.source_language]
         speech_translation_config.add_target_language(self.target_language if self.target_language != 'zh' else 'zh-Hant')
-        speech_translation_config.voice_name = self.lang2voice[self.target_language][0]
+        speech_translation_config.voice_name = self.lang2voice[self.target_language][0] if vc_model_name != 'chris' else self.lang2voice[self.target_language][1]
         audio_config = speechsdk.audio.AudioConfig(filename=audio)
         translation_recognizer = speechsdk.translation.TranslationRecognizer(translation_config=speech_translation_config, audio_config=audio_config)
 
@@ -183,9 +185,9 @@ class AzureEnd2End:
 
         return target_text
     
-    def text_to_speech(self, target_text, temp_file):
+    def text_to_speech(self, target_text, temp_file, vc_model_name):
         speech_config = speechsdk.SpeechConfig(subscription=self.speech_key, region=self.service_region)
-        speech_config.speech_synthesis_voice_name = self.lang2voice[self.target_language][0]
+        speech_config.speech_synthesis_voice_name = self.lang2voice[self.target_language][0] if vc_model_name != 'chris' else self.lang2voice[self.target_language][1]
         audio_config = speechsdk.audio.AudioOutputConfig(filename=temp_file)
         speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
         result = speech_synthesizer.speak_text_async(target_text).get()
@@ -205,7 +207,7 @@ class AzureEnd2End:
         temp_file = audio.replace('_16k', '').replace('.wav', '_azure_temp.wav')
 
         start = time.perf_counter() 
-        source_text, target_text, asr_timestamps = self.speech_translation_continous(audio, temp_file)
+        source_text, target_text, asr_timestamps = self.speech_translation_continous(audio, temp_file, vc_model_name)
         end = time.perf_counter()
         print(f'translation time: {end - start}')
         output_file = None
@@ -240,7 +242,7 @@ class AzureEnd2End:
         output_file = None
         if source_text != '' and target_text != '':
             start = time.perf_counter()
-            self.text_to_speech(target_text, temp_file)
+            self.text_to_speech(target_text, temp_file, vc_model_name)
             end = time.perf_counter()
             print(f'Text to Speech time: {end - start}')
 
