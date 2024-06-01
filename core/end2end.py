@@ -179,7 +179,9 @@ class AzureEnd2End:
         try:
             input_text_elements = [ InputTextItem(text = text) ]
 
-            response = text_translator.translate(content = input_text_elements, to = [self.target_language], from_parameter = self.source_language)
+            response = text_translator.translate(content = input_text_elements, 
+                                                 to = [self.target_language if self.target_language != 'zh' else 'zh-Hant'], 
+                                                 from_parameter = self.source_language if self.source_language != 'zh' else 'zh-Hant')
             translation = response[0] if response else None
 
             if translation:
