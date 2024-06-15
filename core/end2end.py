@@ -171,6 +171,106 @@ class AzureEnd2End:
         if len(temp_synthesis_files) > 0:
             save_synthesis(temp_synthesis_files, temp_file)
         return ' '.join(source_text), ' '.join(target_text), asr_timestamps
+    
+    def speech_translation_continous_src_langdetect(self, audio, temp_file, vc_model_name):
+        """performs continuous speech translation from an audio file"""
+
+        done = False
+        source_text = []
+        target_text = []
+        temp_synthesis_files = []
+        asr_timestamps = []
+
+        def result_callback(event_type: str, evt: speechsdk.translation.TranslationRecognitionEventArgs):
+            """callback to display a translation result"""
+            nonlocal source_text, target_text, asr_timestamps
+            if event_type == 'RECOGNIZED':
+                detect_src_lang = evt.result.properties[speechsdk.PropertyId.SpeechServiceConnection_AutoDetectSourceLanguageResult]
+                source_text.append(evt.result.text)
+                target_text.append(evt.result.translations[self.target_language if self.target_language != 'zh' else 'zh-Hant'])
+                offset = evt.result.offset
+                duration = evt.result.duration
+                start = (offset / 10000000)
+                end = start + (duration / 10000000)
+                asr_timestamps.append((start, end))
+                print("{}:\tTranslations: {}\n\tResult Json: {}".format(
+                    event_type, evt.result.translations.items(), evt.result.json))
+            
+        def stop_cb(evt: speechsdk.SessionEventArgs):
+            """callback that signals to stop continuous recognition upon receiving an event `evt`"""
+            # print('CLOSING on {}'.format(evt))
+            nonlocal done
+            done = True
+
+        def canceled_cb(evt: speechsdk.translation.TranslationRecognitionCanceledEventArgs):
+            pass
+            # print('CANCELED:\n\tReason:{}\n'.format(evt.result.reason))
+            # print('\tDetails: {} ({})'.format(evt, evt.result.cancellation_details.error_details))
+
+        def synthesis_callback(evt: speechsdk.translation.TranslationRecognitionEventArgs):
+            """
+            callback for the synthesis event
+            """
+            nonlocal temp_synthesis_files
+            synthesis_bytes = evt.result.audio
+            if len(synthesis_bytes) > 0:
+                temp_synthesis_file = temp_file.replace('.wav', f'_{len(temp_synthesis_files)}.wav')
+                with open(temp_synthesis_file, 'wb+') as f:
+                    f.write(synthesis_bytes)
+                temp_synthesis_files.append(temp_synthesis_file)
+            print('SYNTHESIZING: \treceived {} bytes of audio. Reason: {}'.format(
+                len(evt.result.audio), evt.result.reason))
+            
+        def save_synthesis(temp_synthesis_files, temp_file):
+            combined_audio = AudioSegment.empty()
+            for temp_synthesis_file in temp_synthesis_files:
+                audio = AudioSegment.from_file(temp_synthesis_file)
+                combined_audio += audio
+
+            combined_audio.export(temp_file, format="wav")
+            for temp_synthesis_file in temp_synthesis_files:
+                os.remove(temp_synthesis_file)
+
+        endpoint_string = "wss://{}.stt.speech.microsoft.com/speech/universal/v2".format(os.getenv('AZURE_SERVICE_REGION'))
+        speech_translation_config = speechsdk.translation.SpeechTranslationConfig(
+            subscription=os.getenv('AZURE_SPEECH_KEY'),
+            endpoint=endpoint_string,)
+        speech_translation_config.add_target_language(self.target_language if self.target_language != 'zh' else 'zh-Hant')
+        speech_translation_config.voice_name = self.lang2voice[self.target_language][0] if vc_model_name != 'chris' else self.lang2voice[self.target_language][1]
+        audio_config = speechsdk.audio.AudioConfig(filename=audio)
+        # Since the spoken language in the input audio changes, you need to set the language identification to "Continuous" mode.
+        # (override the default value of "AtStart").
+        speech_translation_config.set_property(
+            property_id=speechsdk.PropertyId.SpeechServiceConnection_LanguageIdMode, value='Continuous')
+        auto_detect_source_language_config = speechsdk.languageconfig.AutoDetectSourceLanguageConfig(
+            languages=list(self.lang_mapping.values()))
+        
+        translation_recognizer = speechsdk.translation.TranslationRecognizer(
+            translation_config=speech_translation_config, 
+            audio_config=audio_config, 
+            auto_detect_source_language_config=auto_detect_source_language_config)
+
+        # connect callback functions to the events fired by the recognizer
+        # translation_recognizer.session_started.connect(lambda evt: print('SESSION STARTED: {}'.format(evt)))
+        # translation_recognizer.session_stopped.connect(lambda evt: print('SESSION STOPPED {}'.format(evt)))
+        # event for final result
+        translation_recognizer.recognized.connect(lambda evt: result_callback('RECOGNIZED', evt))
+        # cancellation event
+        translation_recognizer.canceled.connect(canceled_cb)
+
+        # stop continuous recognition on either session stopped or canceled events
+        translation_recognizer.session_stopped.connect(stop_cb)
+        translation_recognizer.canceled.connect(stop_cb)
+        # connect callback to the synthesis event
+        translation_recognizer.synthesizing.connect(synthesis_callback)
+
+        translation_recognizer.start_continuous_recognition()
+        while not done:
+            time.sleep(0.1)
+        translation_recognizer.stop_continuous_recognition()
+        if len(temp_synthesis_files) > 0:
+            save_synthesis(temp_synthesis_files, temp_file)
+        return ' '.join(source_text), ' '.join(target_text), asr_timestamps
 
     def sts_end2end_pipeline(self, source_language, target_language, audio, vc_model_name=None):    
         
@@ -180,7 +280,7 @@ class AzureEnd2End:
         temp_file = audio.replace('_16k', '').replace('.wav', '_azure_temp.wav')
 
         start = time.perf_counter() 
-        source_text, target_text, asr_timestamps = self.speech_translation_continous(audio, temp_file, vc_model_name)
+        source_text, target_text, asr_timestamps = self.speech_translation_continous_src_langdetect(audio, temp_file, vc_model_name)
         end = time.perf_counter()
         print(f'translation time: {end - start}')
         output_file = None
