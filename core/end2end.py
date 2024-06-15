@@ -45,6 +45,7 @@ class AzureEnd2End:
             'pl': 'pl-PL',
             'fr': 'fr-FR',
             'de': 'de-DE',
+            'nl': 'nl-NL',
         }
         self.lang2voice = {
             # language code : [female voice name, male voice name]
@@ -55,6 +56,7 @@ class AzureEnd2End:
             'pl' : ['pl-PL-AgnieszkaNeural', 'pl-PL-MarekNeural'], 
             'fr' : ['fr-FR-DeniseNeural', 'fr-FR-HenriNeural'], 
             'de' : ['de-DE-KatjaNeural', 'de-DE-ConradNeural'],
+            'nl' : ['nl-NL-FennaNeural', 'nl-NL-MaartenNeural']
         }
         self.converter = OpenVoiceConverter()
         self.custom_converter = RVCConverter()
@@ -169,7 +171,35 @@ class AzureEnd2End:
         if len(temp_synthesis_files) > 0:
             save_synthesis(temp_synthesis_files, temp_file)
         return ' '.join(source_text), ' '.join(target_text), asr_timestamps
+
+    def sts_end2end_pipeline(self, source_language, target_language, audio, vc_model_name=None):    
         
+        self.source_language = source_language
+        self.target_language = target_language
+        audio = self.convert_16k(audio)
+        temp_file = audio.replace('_16k', '').replace('.wav', '_azure_temp.wav')
+
+        start = time.perf_counter() 
+        source_text, target_text, asr_timestamps = self.speech_translation_continous(audio, temp_file, vc_model_name)
+        end = time.perf_counter()
+        print(f'translation time: {end - start}')
+        output_file = None
+        if source_text != '' and target_text != '':
+            start = time.perf_counter()
+            if vc_model_name == 'auto':
+                output_file = self.converter.convert(temp_file, audio, source_timestamps='all', target_timestamps=asr_timestamps)
+            else:
+                output_file = self.custom_converter.convert(temp_file, model_name=vc_model_name)
+            end = time.perf_counter()
+            print(f'Conversion time: {end - start}')
+
+        if source_text == '':
+            source_text = 'No speech could be recognized'
+        if target_text == '':
+            target_text = 'No text could be translated'
+
+        return source_text, target_text, output_file
+    
     def text_translation(self, text):
         credential = TranslatorCredential(self.translation_key, self.translation_region)
         text_translator = TextTranslationClient(endpoint=self.translation_endpoint, credential=credential)
@@ -207,35 +237,6 @@ class AzureEnd2End:
             print("Speech synthesis canceled: {}".format(cancellation_details.reason))
             if cancellation_details.reason == speechsdk.CancellationReason.Error:
                 print("Error details: {}".format(cancellation_details.error_details))
-
-    def sts_end2end_pipeline(self, source_language, target_language, audio, vc_model_name=None):    
-        
-        self.source_language = source_language
-        self.target_language = target_language
-        audio = self.convert_16k(audio)
-        temp_file = audio.replace('_16k', '').replace('.wav', '_azure_temp.wav')
-
-        start = time.perf_counter() 
-        source_text, target_text, asr_timestamps = self.speech_translation_continous(audio, temp_file, vc_model_name)
-        end = time.perf_counter()
-        print(f'translation time: {end - start}')
-        output_file = None
-        if source_text != '' and target_text != '':
-            start = time.perf_counter()
-            if vc_model_name == 'auto':
-                output_file = self.converter.convert(temp_file, audio, source_timestamps='all', target_timestamps=asr_timestamps)
-            else:
-                output_file = self.custom_converter.convert(temp_file, model_name=vc_model_name)
-            end = time.perf_counter()
-            print(f'Conversion time: {end - start}')
-
-        if source_text == '':
-            source_text = 'No speech could be recognized'
-        if target_text == '':
-            target_text = 'No text could be translated'
-
-        return source_text, target_text, output_file
-    
 
     def tts_end2end_pipeline(self, source_language, target_language, source_text, audio, vc_model_name=None):
 
