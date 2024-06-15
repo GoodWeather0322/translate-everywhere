@@ -62,7 +62,7 @@ class AzureEnd2End:
         self.custom_converter = RVCConverter()
 
     def get_support_languages(self):
-        return list(self.lang_mapping.keys())
+        return ['auto-detect'] + list(self.lang_mapping.keys())
     
     def get_custom_models(self):
         return ['auto'] + list(self.custom_converter.customs_model_with_name.keys())
@@ -278,12 +278,21 @@ class AzureEnd2End:
         self.target_language = target_language
         audio = self.convert_16k(audio)
         temp_file = audio.replace('_16k', '').replace('.wav', '_azure_temp.wav')
+        output_file = None
+
+        if self.target_language == 'auto-detect':
+            source_text = 'No speech could be recognized'
+            target_text = 'Please Select Target Language'
+            return source_text, target_text, output_file
 
         start = time.perf_counter() 
-        source_text, target_text, asr_timestamps = self.speech_translation_continous_src_langdetect(audio, temp_file, vc_model_name)
+        if self.source_language == 'auto-detect':
+            source_text, target_text, asr_timestamps = self.speech_translation_continous_src_langdetect(audio, temp_file, vc_model_name)
+        else:
+            source_text, target_text, asr_timestamps = self.speech_translation_continous(audio, temp_file, vc_model_name)
         end = time.perf_counter()
         print(f'translation time: {end - start}')
-        output_file = None
+        
         if source_text != '' and target_text != '':
             start = time.perf_counter()
             if vc_model_name == 'auto':
