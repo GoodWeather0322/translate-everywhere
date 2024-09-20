@@ -1,4 +1,4 @@
-from faster_whisper import WhisperModel
+# from faster_whisper import WhisperModel
 import azure.cognitiveservices.speech as speechsdk
 import numpy as np
 import torchaudio

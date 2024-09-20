@@ -1,10 +1,10 @@
-from langchain_community.chat_models import ChatOllama
-from langchain_core.prompts import (
-    ChatPromptTemplate,
-    SystemMessagePromptTemplate,
-    HumanMessagePromptTemplate,
-    AIMessagePromptTemplate,
-)
+# from langchain_community.chat_models import ChatOllama
+# from langchain_core.prompts import (
+#     ChatPromptTemplate,
+#     SystemMessagePromptTemplate,
+#     HumanMessagePromptTemplate,
+#     AIMessagePromptTemplate,
+# )
 
 class TranslatorBase:
     def __init__(self):

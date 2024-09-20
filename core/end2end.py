@@ -1,7 +1,7 @@
 from core.asr import WhisperASR, AzureASR
 from core.translator import LLMTranslator
 from core.tts import EdgeTTS
-from core.conversion import OpenVoiceConverter, RVCConverter
+# from core.conversion import OpenVoiceConverter, RVCConverter
 import asyncio
 import time
 import azure.cognitiveservices.speech as speechsdk
@@ -21,7 +21,7 @@ class End2End:
         self.asr_model = AzureASR()
         self.translate_model = LLMTranslator()
         self.tts_model = EdgeTTS()
-        self.converter = OpenVoiceConverter()
+        # self.converter = OpenVoiceConverter()
 
     def end2end_pipeline(self, source_language, target_language, audio):
         transcription = self.asr_model.transcribe_pipeline(audio, source_language)
@@ -58,14 +58,15 @@ class AzureEnd2End:
             'de' : ['de-DE-KatjaNeural', 'de-DE-ConradNeural'],
             'nl' : ['nl-NL-FennaNeural', 'nl-NL-MaartenNeural']
         }
-        self.converter = OpenVoiceConverter()
-        self.custom_converter = RVCConverter()
+        # self.converter = OpenVoiceConverter()
+        # self.custom_converter = RVCConverter()
 
     def get_support_languages(self):
         return ['auto-detect'] + list(self.lang_mapping.keys())
     
     def get_custom_models(self):
-        return ['auto'] + list(self.custom_converter.customs_model_with_name.keys())
+        return ['auto']
+        # return ['auto'] + list(self.custom_converter.customs_model_with_name.keys())
 
     def convert_16k(self, wav_file):
         data, sr = torchaudio.load(wav_file)
@@ -295,10 +296,11 @@ class AzureEnd2End:
         
         if source_text != '' and target_text != '':
             start = time.perf_counter()
-            if vc_model_name == 'auto':
-                output_file = self.converter.convert(temp_file, audio, source_timestamps='all', target_timestamps=asr_timestamps)
-            else:
-                output_file = self.custom_converter.convert(temp_file, model_name=vc_model_name)
+            # if vc_model_name == 'auto':
+            #     output_file = self.converter.convert(temp_file, audio, source_timestamps='all', target_timestamps=asr_timestamps)
+            # else:
+            #     output_file = self.custom_converter.convert(temp_file, model_name=vc_model_name)
+            output_file = temp_file
             end = time.perf_counter()
             print(f'Conversion time: {end - start}')
 
@@ -366,11 +368,12 @@ class AzureEnd2End:
             print(f'Text to Speech time: {end - start}')
 
             start = time.perf_counter()
-            if vc_model_name == 'auto':
-                print('didn\'t give vc_model_name, return tts wav file directly')
-                output_file = temp_file
-            else:
-                output_file = self.custom_converter.convert(temp_file, model_name=vc_model_name)
+            # if vc_model_name == 'auto':
+            #     print('didn\'t give vc_model_name, return tts wav file directly')
+            #     output_file = temp_file
+            # else:
+            #     output_file = self.custom_converter.convert(temp_file, model_name=vc_model_name)
+            output_file = temp_file
             
             end = time.perf_counter()
             print(f'Conversion time: {end - start}')
