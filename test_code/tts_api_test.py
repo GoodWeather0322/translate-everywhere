@@ -1,8 +1,8 @@
 import requests
 import base64
 
-url = "http://localhost:55699/v1/end2end/text-translate-custom"
-save_path = "/mnt/disk1/chris/uaicraft_workspace/translate-everywhere/test_code/test_return.wav"
+url = "http://localhost:5000/v1/end2end/text-translate-custom"
+save_path = "/mnt/disk1/goodweather/translate-everywhere/test_code/test_return.wav"
 
 data = {"source_text": "我終於做好了", "source_lang": "zh", "target_lang": "fr", "name": "evonne"}
 response = requests.post(url, data=data)
