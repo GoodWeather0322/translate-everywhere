@@ -1,0 +1,9 @@
+fastapi[standard]
+aiofiles
+azure-cognitiveservices-speech
+numpy
+torchaudio
+python-dotenv
+edge-tts
+azure-ai-translation-text==1.0.0b1
+pydub
